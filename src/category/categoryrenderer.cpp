@@ -25,11 +25,11 @@ void CategoryRenderer::DrawLegendSymbol(wxDC &dc, wxRect rcSymbol, size_t serie)
   wxColour colour = m_colorScheme.GetColor(serie);
 
 	dc.SetBrush(*wxTheBrushList->FindOrCreateBrush(colour));
-	dc.SetPen(*wxThePenList->FindOrCreatePen(colour, 1, wxSOLID));
+	dc.SetPen(*wxThePenList->FindOrCreatePen(colour, 1, wxPENSTYLE_SOLID));
 
 	dc.DrawRectangle(rcSymbol);
 
-	dc.SetPen(*wxThePenList->FindOrCreatePen(*wxBLACK, 1, wxSOLID));
+	dc.SetPen(*wxThePenList->FindOrCreatePen(*wxBLACK, 1, wxPENSTYLE_SOLID));
 	dc.SetBrush(wxNoBrush);
 
 	dc.DrawRectangle(rcSymbol);
