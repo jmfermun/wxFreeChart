@@ -232,6 +232,13 @@ bool AxisShare::AcceptDataset(Dataset *dataset)
 	return m_axis->AcceptDataset(dataset);
 }
 
+void AxisShare::AddDataset(Dataset *dataset)
+{
+    // Add the dataset to this axis and to the shared axis
+    Axis::AddDataset(dataset);
+    m_axis->AddDataset(dataset);
+}
+
 
 wxCoord ToGraphics(int minCoord, int gRange, double minValue, double maxValue, wxCoord margin, bool vertical, double value)
 {

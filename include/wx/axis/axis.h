@@ -227,7 +227,7 @@ public:
 	/**
 	 * internal. Don't use from programs.
 	 */
-	void AddDataset(Dataset *dataset)
+	virtual void AddDataset(Dataset *dataset)
 	{
 		if (AcceptDataset(dataset)) {
 			m_datasets.Add(dataset);
@@ -353,6 +353,8 @@ public:
 	//
 	// Axis
 	//
+
+	virtual void AddDataset(Dataset *dataset);
 
 	virtual void GetDataBounds(double &minValue, double &maxValue) const;
 
