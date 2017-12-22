@@ -62,12 +62,40 @@ NumberAxis::NumberAxis(AXIS_LOCATION location)
 	m_fixedBounds = false;
 
 	m_multiplier = 1;
+
+	m_subticks = 10;
 }
 
 NumberAxis::~NumberAxis()
 {
 }
 
+void NumberAxis::SetTickFormat(const wxString &tickFormat)
+{
+    m_tickFormat = tickFormat;
+    FireAxisChanged();
+}
+
+void NumberAxis::SetLabelCount(size_t labelCount)
+{
+    if (m_fixedBounds && m_labelCount != labelCount)
+    {
+        m_labelCount = labelCount;
+
+        FixedTicksCalc();
+
+        FireAxisChanged();
+    }
+}
+
+void NumberAxis::IntegerValues(bool intValues)
+{
+    if (m_intValues != intValues) {
+        m_intValues = intValues;
+        // TODO recalc tick steps
+        FireAxisChanged();
+    }
+}
 
 bool NumberAxis::AcceptDataset(Dataset *WXUNUSED(dataset))
 {
@@ -80,52 +108,49 @@ void NumberAxis::SetFixedBounds(double minValue, double maxValue)
 	m_maxValue = maxValue;
 	m_fixedBounds = true;
 
-	UpdateTickValues();
+	FixedTicksCalc();
+
 	FireBoundsChanged();
 }
 
 void NumberAxis::UpdateBounds()
 {
-	if (m_fixedBounds) {
-		UpdateTickValues();
-		return ; // bounds are fixed, so don't update
-	}
+    if (m_fixedBounds)
+    {
+        FixedTicksCalc();
+    }
+    else
+    {
+        // Obtain the minimum and maximum values from the linked datasets to this axis
+        for (size_t n = 0; n < m_datasets.Count(); n++)
+        {
+            bool verticalAxis = IsVertical();
 
-	m_hasLabels = false;
+            double minValue = m_datasets[n]->GetMinValue(verticalAxis);
+            double maxValue = m_datasets[n]->GetMaxValue(verticalAxis);
 
-	for (size_t n = 0; n < m_datasets.Count(); n++) {
-		bool verticalAxis = IsVertical();
+            if (n == 0)
+            {
+                m_minValue = minValue;
+                m_maxValue = maxValue;
+            }
+            else
+            {
+                m_minValue = wxMin(m_minValue, minValue);
+                m_maxValue = wxMax(m_maxValue, maxValue);
+            }
+        }
 
-		double minValue = m_datasets[n]->GetMinValue(verticalAxis);
-		double maxValue = m_datasets[n]->GetMaxValue(verticalAxis);
+        AutomaticTicksCalc();
+    }
 
-		if (n == 0) {
-			m_minValue = minValue;
-			m_maxValue = maxValue;
-		}
-		else {
-			m_minValue = wxMin(m_minValue, minValue);
-			m_maxValue = wxMax(m_maxValue, maxValue);
-		}
-	}
-
-	if (m_minValue == m_maxValue) {
-		if (m_maxValue > 0) {
-			m_minValue = 0;
-		}
-		else {
-			m_maxValue = 0;
-		}
-	}
-
-	UpdateTickValues();
-	FireBoundsChanged();
+    FireBoundsChanged();
 }
 
-void NumberAxis::UpdateTickValues()
+void NumberAxis::FixedTicksCalc()
 {
 	m_hasLabels = false;
-	m_labelInterval = (m_maxValue - m_minValue) / (double) (m_labelCount - 1);
+	m_labelInterval = (m_maxValue - m_minValue) / (double)(m_labelCount - 1);
 
 	if (!IsNormalValue(m_labelInterval)) {
 		// overflow condition bugfix
@@ -138,7 +163,41 @@ void NumberAxis::UpdateTickValues()
 			m_hasLabels = true;
 		}
 	}
-	FireAxisChanged();
+}
+
+void NumberAxis::AutomaticTicksCalc()
+{
+    // This algorithm ensures that there will be at least 2 ticks
+	m_hasLabels = true;
+
+    // We need some degree of separation here to calculate the scales if all the values are the same.
+    // Adding/subtracting 0.5 will give us a range of 1.
+	if (m_maxValue == m_minValue)
+	{
+		m_maxValue += 0.5;
+		m_minValue -= 0.5;
+	}
+
+    double valueRange = m_maxValue - m_minValue;
+
+    if (valueRange < 0)
+        valueRange = -valueRange;
+
+    double rangeOrderOfMagnitude = floor(log10(valueRange));
+
+    m_maxValue = ceil(m_maxValue / (1 * pow(10, rangeOrderOfMagnitude))) * pow(10, rangeOrderOfMagnitude);
+    m_minValue = floor(m_minValue / (1 * pow(10, rangeOrderOfMagnitude))) * pow(10, rangeOrderOfMagnitude);
+
+    valueRange = m_maxValue - m_minValue;
+
+    m_labelInterval = pow(10, rangeOrderOfMagnitude);
+    m_labelCount = round(valueRange / m_labelInterval) + 1;
+
+    if (m_enableSubticks)
+    {
+        m_labelInterval /= 10;
+        m_labelCount = (m_labelCount - 1) * 10 + 1;
+    }
 }
 
 wxSize NumberAxis::GetLongestLabelExtent(wxDC &dc)
@@ -177,7 +236,7 @@ void NumberAxis::GetLabel(size_t step, wxString &label)
 
 	if (m_intValues) {
 		// orig : label = wxString::Format(wxT("%i"), (int) value);
-		label = wxString::Format(wxT("%i"), (int) value * m_multiplier);
+		label = wxString::Format(wxT("%i"), (int)(value * m_multiplier));
 	}
 	else {
 		// orig : label = wxString::Format(m_tickFormat, value);

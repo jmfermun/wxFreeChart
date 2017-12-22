@@ -22,7 +22,6 @@ public:
 	LogarithmicNumberAxis(AXIS_LOCATION location);
 	virtual ~LogarithmicNumberAxis();
 
-  virtual void UpdateBounds();
   virtual double BoundValue(double value);
   virtual bool IsVisible(double value);
 
@@ -31,6 +30,12 @@ public:
 	 * @param logBase   A value used as logarithmic base.
 	 */
 	void SetLogBase(double logBase);
+
+	/**
+	 * Gets logarithmic base.
+	 * @return The value used as logarithmic base.
+	 */
+	double GetLogBase();
 
 	/**
 	 * Truncates exponent in scientific labels to 2 digits
@@ -48,11 +53,10 @@ public:
 	virtual double ToData(wxDC &dc, int minCoord, int gRange, wxCoord g);
 
 protected:
+    virtual bool AcceptDataset(Dataset *dataset);
+    virtual void AutomaticTicksCalc();
 	virtual void GetLabel(size_t step, wxString& label);
 	virtual double GetValue(size_t step);
-
-  double GetMinValue(Dataset* dataset);
-  double GetMaxValue(Dataset* dataset);
 
 private:
 	bool m_longExponent;

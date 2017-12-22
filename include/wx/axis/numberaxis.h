@@ -28,36 +28,19 @@ public:
 	 * Sets format for tick marks.
 	 * @param tickFormat tick format
 	 */
-	void SetTickFormat(const wxString &tickFormat)
-	{
-		m_tickFormat = tickFormat;
-		FireAxisChanged();
-	}
+	void SetTickFormat(const wxString &tickFormat);
 
 	/**
-	 * Sets count of labels.
+	 * Sets count of labels. Fixed bounds mode necessary to change the label count.
 	 * @param labelCount count of labels
 	 */
-	void SetLabelCount(size_t labelCount)
-	{
-		if (m_labelCount != labelCount) {
-			m_labelCount = labelCount;
-			FireAxisChanged();
-		}
-	}
+	void SetLabelCount(size_t labelCount);
 
 	/**
 	 * Set whether to use integer values instead of doubles.
 	 * @param intValues if true than use integer values, false - double values
 	 */
-	void IntegerValues(bool intValues = true)
-	{
-		if (m_intValues != intValues) {
-			m_intValues = intValues;
-			// TODO recalc tick steps
-			FireAxisChanged();
-		}
-	}
+	void IntegerValues(bool intValues = true);
 
 	/**
 	 * Returns multiplier for values.
@@ -93,7 +76,16 @@ public:
 
 protected:
 	virtual bool AcceptDataset(Dataset *dataset);
-  void UpdateTickValues();
+
+	/**
+	 * It calculates the ticks parameters in fixed bounds mode.
+	 */
+    virtual void FixedTicksCalc();
+
+    /**
+	 * It calculates the ticks parameters in automatic bounds mode.
+	 */
+    virtual void AutomaticTicksCalc();
 
 	//
 	// LabelAxis
@@ -108,25 +100,17 @@ protected:
 
 	virtual wxSize GetLongestLabelExtent(wxDC &dc);
 
-  bool m_fixedBounds;
-	bool m_hasLabels;
-  double m_minValue;
-	double m_maxValue;
-
-private:
-
-
-	wxString m_tickFormat;
-
-
+    bool m_fixedBounds;
+    bool m_hasLabels;
+    double m_minValue;
+    double m_maxValue;
+	size_t m_labelCount;
 	double m_labelInterval;
 
-	size_t m_labelCount;
+private:
+	wxString m_tickFormat;
 	bool m_intValues;
-
 	double m_multiplier;
-
-
 };
 
 #endif /*NUMBERAXIS_H_*/

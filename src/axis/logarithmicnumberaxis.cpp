@@ -19,121 +19,54 @@ LogarithmicNumberAxis::LogarithmicNumberAxis(AXIS_LOCATION location)
 , m_logBase(10.0)
 {
 	m_logBase == 10.0 ? SetTickFormat(wxT("%2.2e")) : SetTickFormat(wxT("%2.2f"));
+	m_subticks = m_logBase - 1;
 }
 
 LogarithmicNumberAxis::~LogarithmicNumberAxis()
 {
 }
 
-void LogarithmicNumberAxis::UpdateBounds()
+bool LogarithmicNumberAxis::AcceptDataset(Dataset *dataset)
 {
-	if (m_fixedBounds) {
-		return ; // bounds are fixed, so don't update
-	}
-
-	m_hasLabels = false;
-
-	for (size_t n = 0; n < m_datasets.Count(); n++) {
-		double minValue = GetMinValue(m_datasets[n]);
-		double maxValue = GetMaxValue(m_datasets[n]);
-
-		if (n == 0) {
-			m_minValue = minValue;
-			m_maxValue = maxValue;
-		}
-		else {
-			m_minValue = wxMin(m_minValue, minValue);
-			m_maxValue = wxMax(m_maxValue, maxValue);
-		}
-	}
-
-	if (m_minValue == m_maxValue) {
-		if (m_maxValue > 0) {
-			m_minValue = 0;
-		}
-		else {
-			m_maxValue = 0;
-		}
-	}
-
-	UpdateTickValues();
-	FireBoundsChanged();
+    // This axis only accepts datasets that contain values > 0
+    if (dataset->GetMinValue(IsVertical()) > 0)
+        return true;
+    else
+        return false;
 }
 
-double LogarithmicNumberAxis::GetMinValue(Dataset* dataset)
+void LogarithmicNumberAxis::AutomaticTicksCalc()
 {
-  XYDataset* xyds = wxDynamicCast(dataset, XYDataset);
-  double min = 0;
-  if(IsVertical()) {
-    for (size_t serie = 0; serie < xyds->GetSerieCount(); serie++) {
-      for (size_t n = 0; n < xyds->GetCount(serie); n++) {
-        double y = xyds->GetY(n, serie);
+    // This algorithm ensures that there will be at least 2 ticks
+	m_hasLabels = true;
 
-        if(y == 0) continue;
+    m_maxValue = pow(m_logBase, ceil(log(m_maxValue)/log(m_logBase)));
+    m_minValue = pow(m_logBase, floor(log(m_minValue)/log(m_logBase)));
 
-        if (n == 0 && serie == 0)
-          min = y;
-        else
-          min = wxMin(min, y);
-      }
-    }
-  }
-  else {
-    for (size_t serie = 0; serie < xyds->GetSerieCount(); serie++) {
-      for (size_t n = 0; n < xyds->GetCount(serie); n++) {
-        double x = xyds->GetX(n, serie);
+    // We need some degree of separation here to calculate the scales if all the values are the same.
+    // Giving m_maxValue an order of magnitud greather than m_minValue is sufficient.
+    if (m_maxValue == m_minValue)
+        m_maxValue = m_minValue * m_logBase;
 
-        if(x == 0) continue;
+    float maxOrderOfMagnitud = log(m_maxValue)/log(m_logBase);
+    float minOrderOfMagnitud = log(m_minValue)/log(m_logBase);
 
-        if (n == 0 && serie == 0)
-          min = x;
-        else
-          min = wxMin(min, x);
-      }
-    }
-  }
+    m_labelCount = maxOrderOfMagnitud - minOrderOfMagnitud + 1;
 
-  return min;
-}
-
-double LogarithmicNumberAxis::GetMaxValue(Dataset* dataset)
-{
-  XYDataset* xyds = wxDynamicCast(dataset, XYDataset);
-  double max = 0;
-
-  if(IsVertical()) {
-    for (size_t serie = 0; serie < xyds->GetSerieCount(); serie++) {
-      for (size_t n = 0; n < xyds->GetCount(serie); n++) {
-        double y = xyds->GetY(n, serie);
-
-        if(y == 0) continue;
-
-        if (n == 0 && serie == 0)
-          max = y;
-        else
-          max = wxMax(max, y);
-      }
-    }
-  }
-  else {
-    for (size_t serie = 0; serie < xyds->GetSerieCount(); serie++) {
-      for (size_t n = 0; n < xyds->GetCount(serie); n++) {
-        double x = xyds->GetX(n, serie);
-        if (n == 0 && serie == 0)
-          max = x;
-        else
-          max = wxMax(max, x);
-      }
-    }
-  }
-
-  return max;
+    if (m_enableSubticks)
+        m_labelCount = (m_labelCount - 1) * (m_logBase - 1) + 1;
 }
 
 void LogarithmicNumberAxis::SetLogBase(double logBase)
 {
 	m_logBase = logBase;
 	m_logBase == 10.0 ? SetTickFormat(wxT("%2.2e")) : SetTickFormat(wxT("%2.2f"));
+	m_subticks = m_logBase - 1;
+}
+
+double LogarithmicNumberAxis::GetLogBase()
+{
+    return m_logBase;
 }
 
 void LogarithmicNumberAxis::EnableLongLabelExponent(bool enable)
@@ -143,14 +76,31 @@ void LogarithmicNumberAxis::EnableLongLabelExponent(bool enable)
 
 double LogarithmicNumberAxis::GetValue(size_t step)
 {
-	double min, max;
-	GetDataBounds(min, max);
+	double minValue, maxValue, returnValue;
 
-	double logMin = log(min) / log(m_logBase);
-	double logMax = log(max) / log(m_logBase);
+	GetDataBounds(minValue, maxValue);
 
-	double logInterval = (logMax - logMin) / (GetLabelCount() - 1);
-	return min * pow(m_logBase, step * logInterval);
+	if (m_fixedBounds)
+    {
+        double logMin = log(minValue) / log(m_logBase);
+        double logMax = log(maxValue) / log(m_logBase);
+        double logInterval = (logMax - logMin) / (GetLabelCount() - 1);
+
+        returnValue = minValue * pow(m_logBase, step * logInterval);
+    }
+    else
+    {
+        if (m_enableSubticks)
+        {
+            returnValue = minValue * pow(m_logBase, (int)((step/(m_logBase-1))));
+            returnValue += returnValue * (step % (int)(m_logBase-1));
+        }
+        else
+            returnValue = minValue * pow(m_logBase, step);
+    }
+
+
+	return returnValue;
 }
 
 void LogarithmicNumberAxis::GetLabel(size_t step, wxString& label)
@@ -243,4 +193,3 @@ bool LogarithmicNumberAxis::IsVisible(double value)
     }
   }
 }
-

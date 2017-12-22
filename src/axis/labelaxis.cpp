@@ -62,6 +62,9 @@ LabelAxis::LabelAxis(AXIS_LOCATION location)
 	m_blankLabels = 0;
 
 	m_labelColourer = new DefaultLabelColourer();
+
+	m_enableSubticks = false;
+	m_subticks = 1;
 }
 
 LabelAxis::~LabelAxis()
@@ -411,3 +414,14 @@ bool LabelAxis::HasLabels()
 	return true;
 }
 
+void LabelAxis::EnableSubticks(bool enable)
+{
+    m_enableSubticks = enable;
+
+    if (enable)
+        m_majorLabelStep = m_subticks;
+    else
+        m_majorLabelStep = 1;
+
+    FireAxisChanged();
+}

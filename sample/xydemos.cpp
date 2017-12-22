@@ -64,8 +64,8 @@ public:
 		NumberAxis *bottomAxis = new NumberAxis(AXIS_BOTTOM);
 
 		// optional: set axis titles
-		leftAxis->SetTitle(wxT("X"));
-		bottomAxis->SetTitle(wxT("Y"));
+		leftAxis->SetTitle(wxT("Y"));
+		bottomAxis->SetTitle(wxT("X"));
 
 		// add axes and dataset to plot
 		plot->AddObjects(dataset, leftAxis, bottomAxis);
@@ -278,7 +278,7 @@ private:
 
 /**
  * Class, that updates dynamic dataset on timer.
- */ 
+ */
 class DynamicDemoDatasetUpdater : public wxEvtHandler
 {
 public:
@@ -313,9 +313,12 @@ DynamicDemoDatasetUpdater::DynamicDemoDatasetUpdater(DynamicDemoDataset *dataset
 {
 	m_dataset = dataset;
 
+	for (int i = 0; i < 100; ++i)
+        m_dataset->Add(0.0);
+
 	// start timer, that will add new data to dataset
 	m_timer.SetOwner(this);
-	m_timer.Start(100);
+	m_timer.Start(25);
 }
 
 DynamicDemoDatasetUpdater::~DynamicDemoDatasetUpdater()
@@ -330,6 +333,7 @@ void DynamicDemoDatasetUpdater::OnTimer(wxTimerEvent &WXUNUSED(ev))
 	double r = rand();
 	double y = maxValue * r / (double) RAND_MAX;
 	m_dataset->Add(y);
+    m_dataset->RemoveAt(0);
 }
 
 /**
@@ -711,6 +715,9 @@ public:
 		NumberAxis *leftAxis = new NumberAxis(AXIS_LEFT);
 		NumberAxis *bottomAxis = new NumberAxis(AXIS_BOTTOM);
 
+		leftAxis->EnableSubticks(true);
+		bottomAxis->EnableSubticks(true);
+
 		// add axes to plot
 		plot->AddAxis(leftAxis);
 		plot->AddAxis(bottomAxis);
@@ -913,7 +920,7 @@ public:
 		// serie xy data
 		double data[][2] = {
 				{ 1, 1e-3, },
-				{ 2, 0.0, },
+				{ 2, 1e-1, },
 				{ 3, 1e1, },
 				{ 4, 1.131e-7, },
 				{ 5, 1e-3, },
@@ -939,13 +946,16 @@ public:
 
 		// create left and bottom number axes
 		LogarithmicNumberAxis *leftAxis = new LogarithmicNumberAxis(AXIS_LEFT);
-		leftAxis->SetFixedBounds(1e-6, 1e3);
-		leftAxis->SetMajorLabelSteps(2);
+//		leftAxis->SetFixedBounds(1e-6, 1e3);
+//		leftAxis->SetMajorLabelSteps(2);
 		NumberAxis *bottomAxis = new NumberAxis(AXIS_BOTTOM);
 
 		// optional: set axis titles
-		leftAxis->SetTitle(wxT("X"));
-		bottomAxis->SetTitle(wxT("Y"));
+		leftAxis->SetTitle(wxT("Y"));
+		bottomAxis->SetTitle(wxT("X"));
+
+		// Enable subticks
+		leftAxis->EnableSubticks(true);
 
 		// add axes to plot
 		plot->AddAxis(leftAxis);
@@ -977,6 +987,7 @@ public:
 				{ 8, 8, },
 				{ 16, 16, },
 				{ 32, 32, },
+				{ 64, 64, },
 		};
 
 		// first step: create plot
@@ -1001,8 +1012,8 @@ public:
 		bottomAxis->SetLogBase(2.0);
 
 		// optional: set axis titles
-		leftAxis->SetTitle(wxT("X"));
-		bottomAxis->SetTitle(wxT("Y"));
+		leftAxis->SetTitle(wxT("Y"));
+		bottomAxis->SetTitle(wxT("X"));
 
 		// add axes to plot
 		plot->AddAxis(leftAxis);

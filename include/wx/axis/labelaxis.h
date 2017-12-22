@@ -225,6 +225,12 @@ public:
 
 	virtual wxCoord GetExtent(wxDC &dc);
 
+	/**
+	 * Enables a subdivision of the major ticks
+	 * @param enable true for enable, false for disable
+	 */
+	virtual void EnableSubticks(bool enable);
+
 protected:
 	//
 	// Functions that must be implemented by derivative classes
@@ -254,6 +260,9 @@ protected:
 	virtual wxSize GetLongestLabelExtent(wxDC &dc) = 0;
 
 	virtual bool HasLabels();
+
+	bool m_enableSubticks;
+	size_t m_subticks;
 
 private:
 	void DrawLabels(wxDC &dc, wxRect rc);
